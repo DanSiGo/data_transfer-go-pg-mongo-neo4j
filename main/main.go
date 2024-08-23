@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
 
 	_ "github.com/lib/pq"
 	"go.mongodb.org/mongo-driver/bson"
@@ -38,8 +39,9 @@ func main() {
 		return
 	}
 	defer rows.Close()
-	// "mongodb+srv://mongotreino:y77RSYBO1un6mGoD@cluster0.vrped.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017/"))
+	//dbURL := os.Getenv("MONGOURI")
+	dbURL := os.Getenv("MONGOLOCAL")
+	client, err := mongo.NewClient(options.Client().ApplyURI(dbURL))
 	if err != nil {
 		fmt.Println("Error conecting to MONGO:", err)
 		return
