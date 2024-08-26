@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,7 +19,7 @@ type MongoDoc struct {
 	IdCourse     string `bson:"idCourse"`
 	IdObjective  string `bson:"idObjective"`
 	IdMaterial   string `bson:"idMaterial"`
-	IdTranscript string `bson:"idTranscript"`
+	Transcript string `bson:"transcript"`
 	MaterialType string `bson:"materialType"`
 	IsSuccessful bool   `bson:"isSuccessful"`
 }
@@ -39,11 +40,13 @@ func main() {
 		return
 	}
 	defer rows.Close()
+
+	godotenv.Load()
 	//dbURL := os.Getenv("MONGOURI")
 	dbURL := os.Getenv("MONGOLOCAL")
 	client, err := mongo.NewClient(options.Client().ApplyURI(dbURL))
 	if err != nil {
-		fmt.Println("Error conecting to MONGO:", err)
+		fmt.Println("Error creating client from MONGO:", err)
 		return
 	}
 
@@ -70,9 +73,9 @@ func main() {
 	for rows.Next() {
 		var idObjective string
 		var idMaterial string
-		var idTranscript string
+		var transcript string
 		var materialType string
-		err := rows.Scan(&idObjective, &idMaterial, &idTranscript, &materialType)
+		err := rows.Scan(&idObjective, &idMaterial, &transcript, &materialType)
 		if err != nil {
 			fmt.Println("Error scanning MONGO:", err)
 			return
@@ -83,7 +86,7 @@ func main() {
 			IdCourse:     "",
 			IdObjective:  idObjective,
 			IdMaterial:   idMaterial,
-			IdTranscript: idTranscript,
+			Transcript: transcript,
 			MaterialType: materialType,
 			IsSuccessful: true,
 		}
