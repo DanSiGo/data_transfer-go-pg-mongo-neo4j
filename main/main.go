@@ -9,7 +9,7 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	// "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -19,9 +19,14 @@ type MongoDoc struct {
 	IdCourse     string `bson:"idCourse"`
 	IdObjective  string `bson:"idObjective"`
 	IdMaterial   string `bson:"idMaterial"`
-	Transcript string `bson:"transcript"`
+	Transcript   string `bson:"transcript"`
 	MaterialType string `bson:"materialType"`
 	IsSuccessful bool   `bson:"isSuccessful"`
+}
+
+type TranscriptDoc struct {
+	ID         string `bson:"_id"`
+	Transcript string `bson:"transcript"`
 }
 
 func main() {
@@ -80,13 +85,22 @@ func main() {
 			fmt.Println("Error scanning MONGO:", err)
 			return
 		}
-		objID := primitive.NewObjectID()
+		// verificar o transcript id com learning objective id, para ligar o transcript com o learning objective id correto
+		transcriptCol := client.Database(dbName).Collection("Transcript")
+		transcriptFilter := bson.M{"_id": idMaterial}
+		var transcriptDoc TranscriptDoc
+		err = transcriptCol.FindOne(context.TODO(), transcriptFilter).Decode(&transcriptDoc)
+		if err != nil {
+			fmt.Println("Error fetching transcript:", err)
+			return
+		}
+		//objID := primitive.NewObjectID()
 		mongoDoc := MongoDoc{
-			ID:           objID.Hex(), // generate a unique ID
+			ID:           "", //objID.Hex(), // generate a unique ID;
 			IdCourse:     "",
 			IdObjective:  idObjective,
 			IdMaterial:   idMaterial,
-			Transcript: transcript,
+			Transcript:   transcriptDoc.Transcript,
 			MaterialType: materialType,
 			IsSuccessful: true,
 		}
