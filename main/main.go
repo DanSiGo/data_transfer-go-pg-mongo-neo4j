@@ -9,13 +9,14 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"go.mongodb.org/mongo-driver/bson"
-	// "go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type MongoDoc struct {
-	ID           string `bson:"_id"`
+	MongoID      string `bson:"_id"`
+	ID           string `bson:"id"`
 	IdCourse     string `bson:"idCourse"`
 	IdObjective  string `bson:"idObjective"`
 	IdMaterial   string `bson:"idMaterial"`
@@ -24,7 +25,7 @@ type MongoDoc struct {
 	IsSuccessful bool   `bson:"isSuccessful"`
 }
 
-type TranscriptDoc struct {
+type Transcript struct {
 	ID         string `bson:"_id"`
 	Transcript string `bson:"transcript"`
 }
@@ -47,7 +48,6 @@ func main() {
 	defer rows.Close()
 
 	godotenv.Load()
-	//dbURL := os.Getenv("MONGOURI")
 	dbURL := os.Getenv("MONGOLOCAL")
 	client, err := mongo.NewClient(options.Client().ApplyURI(dbURL))
 	if err != nil {
@@ -78,32 +78,38 @@ func main() {
 	for rows.Next() {
 		var idObjective string
 		var idMaterial string
-		var transcript string
+		var transcript_id string
 		var materialType string
-		err := rows.Scan(&idObjective, &idMaterial, &transcript, &materialType)
+		err := rows.Scan(&idObjective, &idMaterial, &transcript_id, &materialType)
 		if err != nil {
 			fmt.Println("Error scanning MONGO:", err)
 			return
 		}
+
 		// verificar o transcript id com learning objective id, para ligar o transcript com o learning objective id correto
-		transcriptCol := client.Database(dbName).Collection("Transcript")
-		transcriptFilter := bson.M{"_id": idMaterial}
-		var transcriptDoc TranscriptDoc
-		err = transcriptCol.FindOne(context.TODO(), transcriptFilter).Decode(&transcriptDoc)
+		transcriptCol := client.Database(dbName).Collection("VideoLesson")
+		transcriptFilter := bson.M{"uuid": transcript_id}
+		var transcript Transcript
+		err = transcriptCol.FindOne(context.TODO(), transcriptFilter).Decode(&transcript)
 		if err != nil {
 			fmt.Println("Error fetching transcript:", err)
 			return
 		}
-		//objID := primitive.NewObjectID()
+
+		objId := primitive.NewObjectID()
 		mongoDoc := MongoDoc{
-			ID:           "", //objID.Hex(), // generate a unique ID;
+			MongoID:      objId.Hex(),
+			ID:           transcript_id,
 			IdCourse:     "",
 			IdObjective:  idObjective,
 			IdMaterial:   idMaterial,
-			Transcript:   transcriptDoc.Transcript,
+			Transcript:   transcript.Transcript,
 			MaterialType: materialType,
 			IsSuccessful: true,
 		}
+
+		colName := "ClassMaterial"
+		collection := client.Database(dbName).Collection(colName)
 		_, err = collection.InsertOne(context.TODO(), mongoDoc)
 		if err != nil {
 			fmt.Println("Error inserting in MONGO:", err)
